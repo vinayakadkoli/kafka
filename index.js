@@ -22,23 +22,39 @@ const kafkaClientOptions = {
     ssl: false, // Set to true if SSL is enabled
     // Other options like clientId, connectionTimeout, etc.
   };
-  
-  // Create Kafka client
+    // Create Kafka client
 const client = new kafka.KafkaClient(kafkaClientOptions);
-const producer = new kafka.Producer(client);
+  
+const admin = new kafka.Admin(client);
+const topicToCreate = [{
+    topic: config.topicName,
+    partitions: 1, // Number of partitions for the topic
+    replicationFactor: 1 // Number of replications for the topic
+}];
 
-const topic = config.topicName;
+admin.createTopics(topicToCreate, (error, result) => {
+    if (error) {
+        console.error(`Error creating topic: ${error}`);
+    } else {
+        console.log(`Topic created: ${JSON.stringify(result)}`);
+    }
+});
+
+
+const producer = new kafka.Producer(client);
 
 producer.on('ready', () => {
     console.log('Producer is ready');
     
     // Send a message to Kafka topic
-    producer.send([{ topic: topic, messages: 'Hello from Kafka producer' }], (err, data) => {
+    producer.send([{ topic: config.topicName, messages: 'Hello from Kafka producer' }], (err, data) => {
         if (err) {
             console.error('Error:', err);
         } else {
             console.log('Message sent:', data);
         }
+        // Close the producer after sending messages
+        producer.close();
     });
 });
 
